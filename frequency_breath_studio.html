@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Breathe">
+<meta name="theme-color" content="#161B2B">
+<title>Frequency & Breath Studio</title>
+<style>
+  :root { --ink:#161B2B; --ink-2:#212842; --line:#35405E; --paper:#EEE7D8; --paper-dim:#A9A697; --ember:#D9A441; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--ink); }
+  .app { background: var(--ink); color: var(--paper); min-height: 100dvh;
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.45;
+    padding: 20px 18px calc(28px + env(safe-area-inset-bottom)); }
+  .inner { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.05rem; font-weight: 500; letter-spacing: .02em; margin: 0 0 14px; color: var(--paper-dim); }
+
+  .sessions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+  .sessions button { background: var(--ink-2); color: var(--paper-dim); border: 1px solid var(--line); border-radius: 10px; padding: 10px 4px; font: inherit; font-size: .92rem; cursor: pointer; }
+  .sessions button.on { background: var(--ember); color: var(--ink); border-color: var(--ember); font-weight: 600; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+  .routine { border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; margin-bottom: 22px; background: var(--ink-2); }
+  .routine .what { color: var(--paper); margin: 0 0 10px; font-size: .98rem; }
+  .routine ol { margin: 0; padding-left: 20px; font-size: .9rem; color: var(--paper-dim); }
+  .routine li { margin-bottom: 7px; }
+  .routine li b { color: var(--paper); font-weight: 600; }
+  .routine .then { margin-top: 8px; }
+  .routine .then button, .chip { background: transparent; border: 1px solid var(--line); color: var(--paper); border-radius: 999px; padding: 7px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+  .routine .then button { border-color: var(--ember); color: var(--ember); font-size: .85rem; }
+  .chip { background: var(--ink-2); }
+  .chip.on { border-color: var(--ember); color: var(--ember); }
+
+  .stage { display: flex; flex-direction: column; align-items: center; margin-bottom: 22px; }
+  .ring-wrap { width: 240px; height: 240px; position: relative; display: grid; place-items: center; }
+  .halo, .ring { position: absolute; border-radius: 50%; inset: 0; transition: transform linear; }
+  .halo { background: radial-gradient(circle, rgba(217,164,65,.28), rgba(217,164,65,0) 70%); }
+  .ring { border: 2px solid var(--ember); transform: scale(.72); }
+  .ring-text { position: relative; text-align: center; }
+  .ring-text .phase { font-size: 1.1rem; color: var(--paper); min-height: 1.4em; }
+  .ring-text .count { font-size: 2.6rem; font-weight: 300; line-height: 1; color: var(--ember); font-variant-numeric: tabular-nums; }
+  .ring-text .count.idle { font-size: 1.5rem; color: var(--paper-dim); }
+  .ring-text .sub { font-size: .85rem; color: var(--paper-dim); min-height: 1.3em; margin-top: 4px; }
+  .readout { margin-top: 12px; color: var(--paper-dim); font-size: .92rem; text-align: center; font-variant-numeric: tabular-nums; }
+  .readout span { display: block; }
+
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+  .btn { padding: 14px; border-radius: 12px; border: 1px solid var(--ember); background: transparent; color: var(--ember); font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .btn.live { background: var(--ember); color: var(--ink); }
+  .btn.quiet { border-color: var(--line); color: var(--paper-dim); }
+  .btn.span { grid-column: span 2; }
+
+  .wh { margin-bottom: 24px; }
+  .wh .targets { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .wh .targets label { margin: 0 4px 0 0; font-size: .85rem; }
+  .wh input[type=number] { width: 70px; }
+  .wh table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: 12px; font-variant-numeric: tabular-nums; }
+  .wh th, .wh td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  .wh th { color: var(--paper-dim); font-weight: 500; font-size: .8rem; }
+  .wh td.best { color: var(--ember); }
+  .wh .bests { font-size: .85rem; color: var(--paper-dim); margin-top: 8px; }
+
+  section { border-top: 1px solid var(--line); padding-top: 16px; margin-bottom: 20px; }
+  section h2 { font-size: .95rem; font-weight: 500; color: var(--paper-dim); margin: 0 0 12px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .row.four { grid-template-columns: repeat(4, 1fr); }
+  label { display: block; font-size: .8rem; color: var(--paper-dim); margin-bottom: 4px; }
+  input[type=number] { width: 100%; background: var(--ink); border: 1px solid var(--line); color: var(--paper); border-radius: 8px; padding: 10px; font: inherit; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--ember); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; padding: 9px; background: var(--ink-2); color: var(--paper-dim); border: 0; font: inherit; cursor: pointer; }
+  .seg button.on { background: var(--line); color: var(--paper); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+  .hint { font-size: .85rem; color: var(--paper-dim); margin: 8px 0 0; }
+  .hint.warn { color: var(--ember); }
+  footer { font-size: .8rem; color: var(--paper-dim); border-top: 1px solid var(--line); padding-top: 14px; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .halo, .ring { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app"><div class="inner">
+
+<h1>Frequency & Breath Studio</h1>
+
+<div class="sessions" role="tablist" aria-label="Session">
+  <button data-s="pump" role="tab">Pump</button>
+  <button data-s="focus" role="tab">Focus</button>
+  <button data-s="calm" role="tab" class="on">Calm</button>
+  <button data-s="sleep" role="tab">Sleep</button>
+</div>
+
+<div class="routine" id="routine"></div>
+
+<div class="stage">
+  <div class="ring-wrap" aria-live="polite">
+    <div class="halo" id="halo"></div>
+    <div class="ring" id="ring"></div>
+    <div class="ring-text">
+      <div class="phase" id="phase">Ready</div>
+      <div class="count idle" id="count">—</div>
+      <div class="sub" id="sub"></div>
+    </div>
+  </div>
+  <div class="readout"><span id="readout"></span><span id="elapsed"></span></div>
+</div>
+
+<!-- Standard pacer controls -->
+<div class="controls" id="stdControls">
+  <button class="btn" id="toneBtn">Play tone</button>
+  <button class="btn" id="breathBtn">Start breath</button>
+</div>
+
+<!-- Wim Hof controls (Pump only) -->
+<div class="wh hidden" id="whControls">
+  <div class="targets">
+    <label>Breaths per round</label>
+    <button class="chip" data-t="20">20</button>
+    <button class="chip on" data-t="30">30</button>
+    <button class="chip" data-t="40">40</button>
+    <input type="number" id="whTarget" value="30" min="5" max="100" step="1" aria-label="Custom breath count">
+  </div>
+  <div class="controls" style="margin-bottom:10px">
+    <button class="btn" id="toneBtnWh">Play tone</button>
+    <button class="btn" id="whPrimary">Start round 1</button>
+    <button class="btn quiet" id="whFinish">Finish session</button>
+    <button class="btn quiet" id="whReset">Reset</button>
+  </div>
+  <table id="whLog" class="hidden">
+    <thead><tr><th>Round</th><th>Breaths</th><th>Hold empty</th><th>Hold full</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="bests" id="whBests"></div>
+</div>
+
+<section>
+  <h2>Tone</h2>
+  <div class="seg" style="margin-bottom:12px">
+    <button id="modeBin" class="on">Binaural</button>
+    <button id="modePure">Pure tone</button>
+  </div>
+  <div class="row" id="binRow">
+    <div><label for="carrier">Carrier Hz (the hum you hear)</label><input type="number" id="carrier" value="200" min="20" max="1000" step="1"></div>
+    <div><label for="beat">Beat Hz (the rhythm your brain makes)</label><input type="number" id="beat" value="9" min="0.1" max="40" step="0.01"></div>
+  </div>
+  <div class="row" id="pureRow" style="display:none">
+    <div style="grid-column: span 2"><label for="pure">Frequency Hz</label><input type="number" id="pure" value="528" min="1" max="20000" step="0.01"></div>
+  </div>
+  <div class="row">
+    <div><label>Wave</label><div class="seg"><button id="wSine" class="on">Sine</button><button id="wSquare">Square</button></div></div>
+    <div><label for="vol">Volume</label><input type="range" id="vol" min="0" max="100" value="30"></div>
+  </div>
+  <label>Your picks (pure tone, speakers fine)</label>
+  <div class="chips">
+    <button class="chip" data-pure="528">528 love</button>
+    <button class="chip" data-pure="432">432 grounding</button>
+    <button class="chip" data-pure="174">174 calm</button>
+    <button class="chip" data-pure="741">741 clear mind</button>
+    <button class="chip" data-pure="963">963 god</button>
+  </div>
+  <label>Brainwave beats (binaural, headphones)</label>
+  <div class="chips">
+    <button class="chip" data-beat="40">40 focus</button>
+    <button class="chip" data-beat="18">18 beta</button>
+    <button class="chip" data-beat="10">10 alpha</button>
+    <button class="chip" data-beat="7.83">7.83 Schumann</button>
+    <button class="chip" data-beat="6">6 theta</button>
+    <button class="chip" data-beat="2.5">2.5 delta</button>
+  </div>
+  <p class="hint" id="toneHint"></p>
+</section>
+
+<section>
+  <h2>Breath pacer (seconds)</h2>
+  <div class="row four">
+    <div><label for="bIn">In</label><input type="number" id="bIn" value="5.5" min="0.5" max="30" step="0.5"></div>
+    <div><label for="bHold1">Hold</label><input type="number" id="bHold1" value="0" min="0" max="60" step="0.5"></div>
+    <div><label for="bOut">Out</label><input type="number" id="bOut" value="5.5" min="0.5" max="30" step="0.5"></div>
+    <div><label for="bHold2">Hold</label><input type="number" id="bHold2" value="0" min="0" max="60" step="0.5"></div>
+  </div>
+  <p class="hint" id="pacerHint">Follow the ring: it grows on inhale, holds, shrinks on exhale.</p>
+</section>
+
+<footer>
+  Tone is synthesized live on your phone — no file, no compression. Keep volume low. The exhale is where the health benefit lives; the tone is the doorway. Pump holds: seated or lying down, never in water or driving.
+</footer>
+
+</div></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  const SESSIONS = {
+    pump: {
+      carrier: 220, beat: 18, breath: [2, 0, 2, 0], wh: true,
+      what: 'Pump — switch on before F3 or out of a slump.',
+      steps: [
+        ['Breathe', 'Pick 20 / 30 / 40. Tap Start round. Ring runs the wave; the counter tracks you. It pauses at your number on an exhale.'],
+        ['Hold empty', 'Tap Hold empty — stopwatch runs. Tap Hold full when you need air.'],
+        ['Hold full', 'Big inhale, tap Hold full — stopwatch runs. Tap Next round (or Finish) when done.'],
+        ['Rounds', '1–4. Every hold is logged below so you can watch the numbers climb. Seated or lying down.']
+      ],
+      then: null
+    },
+    focus: {
+      carrier: 200, beat: 40, breath: [4, 4, 4, 4],
+      what: 'Focus — before a deep-work block on the businesses.',
+      steps: [
+        ['Breath', 'Alternate nostril first: in left 4, hold 4, out right 4, in right 4, hold 4, out left 4. 5–10 cycles (manual). Then box breathing on the pacer, 4-4-4-4, for 5–10 rounds.'],
+        ['Tone', '40 Hz gamma, binaural, headphones — the one with real research. Pure-tone option: 741.'],
+        ['Length', '6–10 minutes.']
+      ],
+      then: { label: 'Box feels easy? Switch to 5-5-5-5', breath: [5, 5, 5, 5] }
+    },
+    calm: {
+      carrier: 200, beat: 10, breath: [5.5, 0, 5.5, 0],
+      what: 'Calm — midday reset, or any moment the "everything is collapsing" feeling shows up. This session moves blood pressure.',
+      steps: [
+        ['Start', '1–3 physiological sighs (manual): inhale through the nose, a second short sip on top, long slow exhale through the mouth.'],
+        ['Breath', 'Coherent breathing on the pacer: 5.5 in, 5.5 out, no holds. 5 minutes minimum, 10 is better.'],
+        ['Tone', '10 Hz alpha or 7.83 Schumann, binaural. Pure-tone options: 174 or 432.'],
+        ['Length', '5–10 minutes.']
+      ],
+      then: { label: 'Use 7.83 Schumann instead', beat: 7.83 }
+    },
+    sleep: {
+      carrier: 150, beat: 2.5, breath: [4, 7, 8, 0],
+      what: 'Sleep — lights low, lying down.',
+      steps: [
+        ['Breath', '4-7-8 on the pacer: in 4, hold 7, out 8 with a whoosh. Four rounds. Lightheaded is normal the first week — that is why you are lying down.'],
+        ['Then', 'Switch the pacer to 5.5 in / 5.5 out and let it carry you under. No rep count.'],
+        ['Tone', '2.5 Hz delta, binaural. Pure-tone options: 432 or 963.'],
+        ['Length', 'Until you drift.']
+      ],
+      then: { label: 'Done with 4 rounds? Switch to 5.5 / 5.5', breath: [5.5, 0, 5.5, 0] }
+    }
+  };
+
+  // ---------- Audio ----------
+  let ctx = null, gain = null, oscL = null, oscR = null, playing = false, mode = 'bin', wave = 'sine';
+  function ensureCtx() {
+    if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = 0; gain.connect(ctx.destination); }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+  function targetVol() { return (+$('vol').value / 100) * (wave === 'square' ? .12 : .35); }
+  function teardownOscs() { [oscL, oscR].forEach(o => { if (o) { try { o.stop(); } catch(e){} o.disconnect(); } }); oscL = oscR = null; }
+  function buildOscs() {
+    teardownOscs();
+    oscL = ctx.createOscillator(); oscR = ctx.createOscillator(); oscL.type = wave; oscR.type = wave;
+    const pL = ctx.createStereoPanner(), pR = ctx.createStereoPanner(); pL.pan.value = -1; pR.pan.value = 1;
+    oscL.connect(pL).connect(gain); oscR.connect(pR).connect(gain);
+    applyFreqs(); oscL.start(); oscR.start();
+  }
+  function applyFreqs() {
+    updateReadout(); if (!oscL) return; const t = ctx.currentTime;
+    if (mode === 'bin') { const c = +$('carrier').value || 200, b = +$('beat').value || 0; oscL.frequency.setTargetAtTime(c, t, .02); oscR.frequency.setTargetAtTime(c + b, t, .02); }
+    else { const f = +$('pure').value || 528; oscL.frequency.setTargetAtTime(f, t, .02); oscR.frequency.setTargetAtTime(f, t, .02); }
+  }
+  function setToneBtns() {
+    [$('toneBtn'), $('toneBtnWh')].forEach(b => { b.textContent = playing ? 'Stop tone' : 'Play tone'; b.classList.toggle('live', playing); });
+  }
+  function startTone() { ensureCtx(); buildOscs(); gain.gain.cancelScheduledValues(ctx.currentTime); gain.gain.setTargetAtTime(targetVol(), ctx.currentTime, .15); playing = true; setToneBtns(); }
+  function stopTone() { if (!ctx) return; gain.gain.setTargetAtTime(0, ctx.currentTime, .15); setTimeout(teardownOscs, 500); playing = false; setToneBtns(); }
+  $('toneBtn').onclick = $('toneBtnWh').onclick = () => playing ? stopTone() : startTone();
+  $('vol').oninput = () => { if (playing) gain.gain.setTargetAtTime(targetVol(), ctx.currentTime, .05); };
+  ['carrier','beat','pure'].forEach(id => $(id).oninput = applyFreqs);
+  function setMode(m) { mode = m; $('modeBin').classList.toggle('on', m === 'bin'); $('modePure').classList.toggle('on', m === 'pure'); $('binRow').style.display = m === 'bin' ? '' : 'none'; $('pureRow').style.display = m === 'pure' ? '' : 'none'; applyFreqs(); }
+  $('modeBin').onclick = () => setMode('bin'); $('modePure').onclick = () => setMode('pure');
+  function setWave(w) { wave = w; $('wSine').classList.toggle('on', w === 'sine'); $('wSquare').classList.toggle('on', w === 'square'); if (playing) { buildOscs(); gain.gain.setTargetAtTime(targetVol(), ctx.currentTime, .05); } }
+  $('wSine').onclick = () => setWave('sine'); $('wSquare').onclick = () => setWave('square');
+  document.querySelectorAll('.chip[data-beat], .chip[data-pure]').forEach(ch => ch.onclick = () => {
+    if (ch.dataset.beat) { $('beat').value = ch.dataset.beat; setMode('bin'); }
+    if (ch.dataset.pure) { $('pure').value = ch.dataset.pure; setMode('pure'); }
+  });
+  function updateReadout() {
+    const hint = $('toneHint');
+    if (mode === 'bin') { const c = +$('carrier').value || 0, b = +$('beat').value || 0; $('readout').textContent = `Left ${c} Hz · Right ${(c + b).toFixed(2)} Hz · Beat ${b} Hz`; hint.className = 'hint'; hint.textContent = 'Binaural needs headphones. Each ear gets a slightly different tone; the beat is the difference, made in your brain.'; }
+    else { const f = +$('pure').value || 0; $('readout').textContent = `${f} Hz, both ears`; if (f < 20) { hint.className = 'hint warn'; hint.textContent = 'Below 20 Hz is under human hearing and no speaker can play it. Use Binaural to get this number as a beat.'; } else { hint.className = 'hint'; hint.textContent = 'Same frequency in both ears. Speakers or headphones both work.'; } }
+  }
+
+  // ---------- Ring helpers ----------
+  const ring = $('ring'), halo = $('halo');
+  let wakeLock = null;
+  function setRing(scale, secs) { ring.style.transitionDuration = secs + 's'; halo.style.transitionDuration = secs + 's'; ring.style.transform = `scale(${scale})`; halo.style.transform = `scale(${scale === 1 ? 1.15 : .9})`; }
+  async function requestWake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {} }
+  function releaseWake() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+  function fmt(s) { return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
+  function fmtHold(s) { const m = Math.floor(s / 60), r = s - m * 60; return m + ':' + (r < 10 ? '0' : '') + r.toFixed(1); }
+  function ringIdle(label) { $('phase').textContent = label || 'Ready'; $('count').textContent = '—'; $('count').classList.add('idle'); $('sub').textContent = ''; setRing(.72, 1); }
+
+  // ---------- Standard pacer ----------
+  let breathing = false, raf = null, startedAt = 0, elapsedTimer = null;
+  function currentList() { return [['Inhale', +$('bIn').value, 1], ['Hold', +$('bHold1').value, 1], ['Exhale', +$('bOut').value, .72], ['Hold', +$('bHold2').value, .72]]; }
+  function runPhase(list, i) {
+    if (!breathing) return; const [name, secs, scale] = list[i];
+    if (secs <= 0) { runPhase(list, (i + 1) % list.length); return; }
+    $('phase').textContent = name; setRing(scale, secs);
+    const end = performance.now() + secs * 1000;
+    const tick = () => { if (!breathing) return; const left = Math.max(0, (end - performance.now()) / 1000); $('count').textContent = left < 10 ? left.toFixed(1) : Math.ceil(left); if (left > 0) raf = requestAnimationFrame(tick); else runPhase(list, (i + 1) % list.length); };
+    tick();
+  }
+  function startElapsed() { startedAt = performance.now(); clearInterval(elapsedTimer); elapsedTimer = setInterval(() => $('elapsed').textContent = 'Elapsed ' + fmt((performance.now() - startedAt) / 1000), 1000); }
+  function stopElapsed() { clearInterval(elapsedTimer); $('elapsed').textContent = ''; }
+  function startBreath() {
+    breathing = true; requestWake(); startElapsed(); $('count').classList.remove('idle');
+    $('breathBtn').textContent = 'Stop breath'; $('breathBtn').classList.add('live'); setRing(.72, 0);
+    setTimeout(() => runPhase(currentList(), 0), 50);
+  }
+  function stopBreath() {
+    breathing = false; cancelAnimationFrame(raf); stopElapsed(); releaseWake(); ringIdle();
+    $('breathBtn').textContent = 'Start breath'; $('breathBtn').classList.remove('live');
+  }
+  function restartIfBreathing() { if (breathing) { cancelAnimationFrame(raf); setTimeout(() => runPhase(currentList(), 0), 50); } }
+  $('breathBtn').onclick = () => breathing ? stopBreath() : startBreath();
+  ['bIn','bHold1','bOut','bHold2'].forEach(id => $(id).onchange = () => { restartIfBreathing(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (breathing || wh.state !== 'idle')) requestWake(); });
+
+  // ---------- Wim Hof mode (Pump) ----------
+  const wh = { state: 'idle', round: 1, breaths: 0, target: 30, log: [], cur: {}, holdStart: 0, holdRaf: null, best: { empty: 0, full: 0 } };
+  const P = $('whPrimary');
+
+  async function loadBests() {
+    try { if (window.storage) { const r = await window.storage.get('wh-best-holds'); if (r && r.value) wh.best = JSON.parse(r.value); }
+          else { const v = localStorage.getItem('wh-best-holds'); if (v) wh.best = JSON.parse(v); } } catch(e) {}
+    renderBests();
+  }
+  async function saveBests() {
+    try { if (window.storage) await window.storage.set('wh-best-holds', JSON.stringify(wh.best));
+          else localStorage.setItem('wh-best-holds', JSON.stringify(wh.best)); } catch(e) {}
+  }
+  function renderBests() { $('whBests').textContent = (wh.best.empty || wh.best.full) ? `All-time best — empty ${fmtHold(wh.best.empty)} · full ${fmtHold(wh.best.full)}` : ''; }
+
+  document.querySelectorAll('.chip[data-t]').forEach(ch => ch.onclick = () => { $('whTarget').value = ch.dataset.t; syncTarget(); });
+  $('whTarget').oninput = syncTarget;
+  function syncTarget() {
+    wh.target = Math.max(5, +$('whTarget').value || 30);
+    document.querySelectorAll('.chip[data-t]').forEach(c => c.classList.toggle('on', +c.dataset.t === wh.target));
+    if (wh.state === 'breathing') $('sub').textContent = `of ${wh.target}`;
+  }
+
+  function whBreathe(phase) {
+    if (wh.state !== 'breathing') return;
+    const inS = +$('bIn').value || 2, outS = +$('bOut').value || 2;
+    const isIn = phase === 'in';
+    $('phase').textContent = isIn ? 'Inhale' : 'Let go'; setRing(isIn ? 1 : .72, isIn ? inS : outS);
+    const end = performance.now() + (isIn ? inS : outS) * 1000;
+    const tick = () => {
+      if (wh.state !== 'breathing') return;
+      if (performance.now() < end) { wh.holdRaf = requestAnimationFrame(tick); return; }
+      if (isIn) { whBreathe('out'); return; }
+      wh.breaths++; $('count').textContent = wh.breaths;
+      if (wh.breaths >= wh.target) { wh.state = 'atTarget'; $('phase').textContent = 'Exhale & hold'; $('sub').textContent = 'tap Hold empty'; P.textContent = 'Hold empty'; P.classList.add('live'); }
+      else whBreathe('in');
+    };
+    tick();
+  }
+  function startHold(kind) {
+    wh.state = kind; wh.holdStart = performance.now();
+    $('phase').textContent = kind === 'holdEmpty' ? 'Hold empty' : 'Hold full';
+    setRing(kind === 'holdEmpty' ? .72 : 1, .6); $('count').classList.remove('idle');
+    const best = wh.best[kind === 'holdEmpty' ? 'empty' : 'full'];
+    $('sub').textContent = best ? `best ${fmtHold(best)}` : '';
+    P.textContent = kind === 'holdEmpty' ? 'Hold full' : `Next round`; P.classList.add('live');
+    const tick = () => { if (wh.state !== kind) return; $('count').textContent = fmtHold((performance.now() - wh.holdStart) / 1000); wh.holdRaf = requestAnimationFrame(tick); };
+    tick();
+  }
+  function endHold() { return +((performance.now() - wh.holdStart) / 1000).toFixed(1); }
+  function logRound() {
+    wh.log.push({ round: wh.round, breaths: wh.breaths, empty: wh.cur.empty || 0, full: wh.cur.full || 0 });
+    let changed = false;
+    if ((wh.cur.empty || 0) > wh.best.empty) { wh.best.empty = wh.cur.empty; changed = true; }
+    if ((wh.cur.full || 0) > wh.best.full) { wh.best.full = wh.cur.full; changed = true; }
+    if (changed) saveBests();
+    renderLog();
+  }
+  function renderLog() {
+    const tb = $('whLog').querySelector('tbody'); tb.innerHTML = '';
+    const bestE = Math.max(...wh.log.map(r => r.empty), 0), bestF = Math.max(...wh.log.map(r => r.full), 0);
+    wh.log.forEach(r => {
+      const tr = document.createElement('tr');
+      [r.round, r.breaths, fmtHold(r.empty), fmtHold(r.full)].forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if ((i === 2 && r.empty === bestE && bestE > 0) || (i === 3 && r.full === bestF && bestF > 0)) td.className = 'best'; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    $('whLog').classList.toggle('hidden', wh.log.length === 0); renderBests();
+  }
+  function whStartRound() {
+    wh.state = 'breathing'; wh.breaths = 0; wh.cur = {}; requestWake();
+    if (wh.round === 1 && wh.log.length === 0) startElapsed();
+    $('count').classList.remove('idle'); $('count').textContent = '0'; $('sub').textContent = `of ${wh.target}`;
+    P.textContent = 'Hold empty'; P.classList.remove('live'); setRing(.72, 0);
+    setTimeout(() => whBreathe('in'), 50);
+  }
+  P.onclick = () => {
+    switch (wh.state) {
+      case 'idle': whStartRound(); break;
+      case 'breathing': case 'atTarget': cancelAnimationFrame(wh.holdRaf); startHold('holdEmpty'); break;
+      case 'holdEmpty': wh.cur.empty = endHold(); cancelAnimationFrame(wh.holdRaf); startHold('holdFull'); break;
+      case 'holdFull': wh.cur.full = endHold(); cancelAnimationFrame(wh.holdRaf); logRound(); wh.round++; whStartRound(); break;
+    }
+  };
+  $('whFinish').onclick = () => {
+    if (wh.state === 'holdEmpty') { wh.cur.empty = endHold(); logRound(); }
+    else if (wh.state === 'holdFull') { wh.cur.full = endHold(); logRound(); }
+    else if ((wh.state === 'breathing' || wh.state === 'atTarget') && wh.breaths > 0) logRound();
+    cancelAnimationFrame(wh.holdRaf); wh.state = 'idle'; stopElapsed(); releaseWake();
+    ringIdle(wh.log.length ? `${wh.log.length} round${wh.log.length > 1 ? 's' : ''} done` : 'Ready');
+    wh.round = wh.log.length + 1; P.textContent = `Start round ${wh.round}`; P.classList.remove('live');
+  };
+  $('whReset').onclick = () => {
+    cancelAnimationFrame(wh.holdRaf); wh.state = 'idle'; wh.round = 1; wh.breaths = 0; wh.log = []; wh.cur = {};
+    stopElapsed(); releaseWake(); ringIdle(); renderLog(); P.textContent = 'Start round 1'; P.classList.remove('live');
+  };
+
+  // ---------- Sessions ----------
+  function setBreath(arr) { [$('bIn'), $('bHold1'), $('bOut'), $('bHold2')].forEach((el, i) => el.value = arr[i]); restartIfBreathing(); }
+  function renderRoutine(s) {
+    const box = $('routine'); box.innerHTML = '';
+    const p = document.createElement('p'); p.className = 'what'; p.textContent = s.what; box.appendChild(p);
+    const ol = document.createElement('ol');
+    s.steps.forEach(([k, v]) => { const li = document.createElement('li'); const b = document.createElement('b'); b.textContent = k + ' — '; li.appendChild(b); li.appendChild(document.createTextNode(v)); ol.appendChild(li); });
+    box.appendChild(ol);
+    if (s.then) {
+      const d = document.createElement('div'); d.className = 'then'; const btn = document.createElement('button'); btn.textContent = s.then.label;
+      btn.onclick = () => { if (s.then.breath) setBreath(s.then.breath); if (s.then.beat) { $('beat').value = s.then.beat; setMode('bin'); } btn.textContent = 'Switched'; };
+      d.appendChild(btn); box.appendChild(d);
+    }
+  }
+  function loadSession(key) {
+    const s = SESSIONS[key];
+    if (breathing) stopBreath();
+    if (wh.state !== 'idle') $('whFinish').onclick();
+    document.querySelectorAll('.sessions button').forEach(b => b.classList.toggle('on', b.dataset.s === key));
+    $('carrier').value = s.carrier; $('beat').value = s.beat; setWave('sine'); setMode('bin'); setBreath(s.breath);
+    renderRoutine(s);
+    $('stdControls').classList.toggle('hidden', !!s.wh); $('whControls').classList.toggle('hidden', !s.wh);
+    $('bHold1').disabled = $('bHold2').disabled = !!s.wh;
+    $('pacerHint').textContent = s.wh ? 'Pump uses In and Out for the wave. Holds are timed by your buttons, not the pacer.' : 'Follow the ring: it grows on inhale, holds, shrinks on exhale.';
+    ringIdle();
+  }
+  document.querySelectorAll('.sessions button').forEach(b => b.onclick = () => loadSession(b.dataset.s));
+  loadSession('calm'); syncTarget(); loadBests();
+})();
+</script>
+</body>
+</html>
